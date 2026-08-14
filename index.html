@@ -62,9 +62,18 @@ button:hover:not(:disabled){transform:translateY(-2px);background-position:100% 
 </main>
 <script>
 const form=document.getElementById('form'),wallet=document.getElementById('wallet'),generate=document.getElementById('generate'),paste=document.getElementById('paste'),error=document.getElementById('error'),result=document.getElementById('result'),reward=document.getElementById('reward'),copy=document.getElementById('copy'),card=document.getElementById('card');
+const SMARTLINK='https://omg10.com/4/9372114';
+const AD_OPENED_KEY='rainbowclaim_smartlink_opened';
 wallet.addEventListener('focus',()=>card.classList.add('input-active'));wallet.addEventListener('blur',()=>card.classList.remove('input-active'));
 paste.addEventListener('click',async()=>{error.textContent='';try{const text=await navigator.clipboard.readText();wallet.focus();wallet.value=text.trim();}catch{error.textContent='Tap and hold the box and choose Paste, or allow clipboard access in your browser.'}});
-form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';result.hidden=true;const value=wallet.value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(value)){error.textContent='Please enter a valid Ethereum wallet address.';return}generate.disabled=true;generate.textContent='Generating...';try{const r=await fetch('/.netlify/functions/generate-reward',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({walletAddress:value})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Unable to generate a reward address.');reward.textContent=data.rewardAddress;result.hidden=false}catch(err){error.textContent=err.message||'Unable to generate a reward address. Please try again.'}finally{generate.disabled=false;generate.textContent='Generate Reward Address'}});
+form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';result.hidden=true;const value=wallet.value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(value)){error.textContent='Please enter a valid Ethereum wallet address.';return}
+  if(!sessionStorage.getItem(AD_OPENED_KEY)){
+    const adWindow=window.open(SMARTLINK,'_blank','noopener,noreferrer');
+    if(adWindow){sessionStorage.setItem(AD_OPENED_KEY,'1');error.textContent='Ad opened in a new tab. Return here and click Generate again to continue.';}
+    else{error.textContent='Please allow pop-ups for this site, then click Generate again.';}
+    return;
+  }
+  generate.disabled=true;generate.textContent='Generating...';try{const r=await fetch('/.netlify/functions/generate-reward',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({walletAddress:value})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Unable to generate a reward address.');reward.textContent=data.rewardAddress;result.hidden=false;}catch(err){error.textContent=err.message||'Unable to generate a reward address. Please try again.'}finally{generate.disabled=false;generate.textContent='Generate Reward Address'}});
 copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(reward.textContent);copy.textContent='Copied!';setTimeout(()=>copy.textContent='Copy Address',1800)}catch{error.textContent='Unable to copy the reward address. Please copy it manually.'}});
 </script>
 </body>
